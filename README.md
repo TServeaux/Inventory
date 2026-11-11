@@ -1,24 +1,24 @@
 # Inventory
 
-Application de bureau pour gérer un **stock de composants électroniques** (résistances, LED, circuits intégrés...), écrite en **Python** avec **[Flet](https://flet.dev)**.
+A desktop application for managing a **stock of electronic components** (resistors, LEDs, integrated circuits...), written in **Python** with **[Flet](https://flet.dev)**.
 
-On range ses composants par catégories, avec une photo, une quantité et une description. On ajoute ou retire du stock en quelques clics. Tout est sauvegardé automatiquement.
+Components are organized by category, each with a picture, a quantity and a description. Stock can be added or removed in a few clicks, and everything is saved automatically.
 
-## Fonctionnalités
+## Features
 
-- **Liste du stock** groupée par catégorie, triée par nom, avec un filtre par catégorie.
-- **Ajout d'un composant** : nom, catégorie, photo, quantité, description.
-- **Catégories personnalisées** : on crée les siennes directement depuis le formulaire.
-- **Page de détail** de chaque composant, avec un champ quantité et des boutons **Add** / **Remove**.
-- **Contrôles** : nom unique, quantité valide, impossible de retirer plus que le stock disponible.
-- **Sauvegarde automatique** après chaque modification. Les photos sont copiées dans le dossier de données.
+- **Stock list** grouped by category, sorted by name, with a category filter.
+- **Add a component**: name, category, picture, quantity, description.
+- **Custom categories**: create your own directly from the form.
+- **Detail page** for each component, with a quantity field and **Add** / **Remove** buttons.
+- **Validation**: unique names, valid quantities, and no removing more than what is in stock.
+- **Auto-save** after every change. Pictures are copied into the data folder.
 
 ## Installation
 
-Prérequis : **Python 3.12 ou plus récent** (le projet est développé avec Python 3.14 et Flet 1.1).
+Requirements: **Python 3.12 or newer** (the project is developed with Python 3.14 and Flet 1.1).
 
 ```bash
-git clone <url-du-depot>
+git clone <repository-url>
 cd Inventory
 
 python -m venv .venv
@@ -28,88 +28,88 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-## Lancement
+## Usage
 
-Depuis le dossier du projet :
+From the project folder:
 
 ```bash
 python main.py
 ```
 
-Au premier lancement, le stock est vide. Pour commencer :
+The stock is empty on first launch. To get started:
 
-1. Clique sur **＋** (en bas à droite).
-2. Crée une catégorie dans le champ **New category**, puis valide avec **＋**.
-3. Remplis le formulaire et clique sur **Save**.
-4. Sur la page d'accueil, clique sur un composant pour ajouter ou retirer du stock.
+1. Click **＋** (bottom right).
+2. Create a category in the **New category** field, then confirm with **＋**.
+3. Fill in the form and click **Save**.
+4. On the home page, click a component to add or remove stock.
 
-## Structure du projet
+## Project structure
 
 ```
-main.py                     Point d'entrée
+main.py                     Entry point
 src/
   core/
-    userInterface.py        Routage entre les pages, création du stock
-    stock.py                Classe Stock : données et règles de gestion
+    userInterface.py        Routing between pages, creates the stock
+    stock.py                Stock class: data and business rules
     views/
-      home.py               Page d'accueil (liste du stock)
-      newComponent.py       Formulaire d'ajout
-      componentDetail.py    Détail d'un composant et mouvements de stock
+      home.py               Home page (stock list)
+      newComponent.py       Add-component form
+      componentDetail.py    Component details and stock movements
   utils/
-    save.py                 Classe Save : lecture / écriture des fichiers
-data/                       Données de l'utilisateur (créé automatiquement, non versionné)
+    save.py                 Save class: reading / writing files
+data/                       User data (created automatically, not versioned)
   inventory.json
   pictures/
 ```
 
 ## Architecture
 
-Le code est découpé en trois couches, chacune avec une seule responsabilité :
+The code is split into three layers, each with a single responsibility:
 
 ```
-Vues (Home, NewComponent, ComponentDetail)    affichage et saisie
-        │  appellent les méthodes de Stock
+Views (Home, NewComponent, ComponentDetail)   display and input
+        │  call Stock methods
         ▼
-Stock                                         règles de gestion
-        │  demande une sauvegarde après chaque changement
+Stock                                         business rules
+        │  requests a save after every change
         ▼
-Save                                          fichiers (JSON + photos)
+Save                                          files (JSON + pictures)
 ```
 
-- **Les vues** ne modifient jamais les données elles-mêmes. Elles appellent `Stock` et affichent le résultat ou le message d'erreur.
-- **`Stock`** contient toutes les règles. Quand une opération est refusée, il lève une `StockError` dont le message est affiché à l'utilisateur. Les règles s'appliquent donc partout, quelle que soit la page qui fait la demande.
-- **`Save`** ne connaît que des fichiers. Il écrit d'abord dans un fichier temporaire, puis remplace l'ancien en une seule opération : une coupure pendant l'écriture ne corrompt pas la sauvegarde.
+- **Views** never modify the data themselves. They call `Stock` and display the result or the error message.
+- **`Stock`** holds all the rules. When an operation is rejected, it raises a `StockError` whose message is shown to the user. The rules therefore apply everywhere, whichever page makes the request.
+- **`Save`** only knows about files. It first writes to a temporary file, then replaces the old one in a single operation, so an interruption during the write cannot corrupt the save file.
 
-## Format des données
+## Data format
 
-`data/inventory.json` :
+`data/inventory.json`:
 
 ```json
 {
   "categories": ["Resistors", "LEDs"],
   "components": [
     {
-      "name": "LED rouge 5mm",
+      "name": "Red LED 5mm",
       "category": "LEDs",
       "picture": "3f2a9c...e1.jpg",
       "quantity": 42,
-      "description": "Diffuse, 20 mA"
+      "description": "Diffused, 20 mA"
     }
   ]
 }
 ```
 
-- `name` sert d'**identifiant** : il est unique, sans tenir compte des majuscules ni des espaces en début et fin.
-- `picture` est le nom de la copie dans `data/pictures/`, ou `null` s'il n'y a pas de photo.
+- `name` is the component's **identifier**: it must be unique, ignoring case and leading/trailing spaces.
+- `picture` is the name of the copy in `data/pictures/`, or `null` if there is no picture.
 
-> Le dossier `data/` est exclu de git. Pense à le sauvegarder de ton côté si ton stock est important.
+> The `data/` folder is excluded from git. Back it up yourself if your stock matters to you.
 
-## Limites actuelles et pistes
+## Current limitations and roadmap
 
-- Il n'est pas encore possible de **modifier** ni de **supprimer** un composant ou une catégorie.
-- Pas encore de version **web / téléphone** : le choix de la photo devra être adapté.
-- Stockage en JSON, adapté à un seul utilisateur. Pour plusieurs appareils en même temps, il faudrait passer à une base de données comme SQLite.
+- Components and categories cannot be **edited** or **deleted** yet.
+- No **web / mobile** version yet: picture selection will need to be adapted.
+- JSON storage is suited to a single user. Using several devices at the same time would require a database such as SQLite.
 
-## Auteur
+## Author
 
 Tao Serveaux
