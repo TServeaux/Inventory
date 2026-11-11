@@ -15,20 +15,38 @@ from urllib.parse import unquote
 
 import flet as ft
 
-from src.core.stock import Stock
-from src.core.views.componentDetail import ComponentDetail
-from src.core.views.home import Home
-from src.core.views.newComponent import NewComponent
-from src.utils.save import Save
+from core.stock import Stock
+from core.views.componentDetail import ComponentDetail
+from core.views.home import Home
+from core.views.newComponent import NewComponent
+from utils.save import Save
 
-# Project root = two folders above this file (src/core/ -> project).
-PROJECT_FOLDER = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DATA_FOLDER = os.path.join(PROJECT_FOLDER, "data")
+# Name of the sub-folder created inside the documents folder given by the system.
+DATA_FOLDER_NAME = "Inventory"
 
 
-def interface(page: ft.Page):
+async def dataFolder():
+    """
+    Description : Find the folder where the inventory is stored. The system gives
+        the documents folder of the application (Windows: the user's Documents
+        folder, Android: a private folder of the app, kept across updates),
+        and a sub-folder "Inventory" is used inside it.
+
+    Args :
+        None
+
+    Output :
+        str : full path of the data folder (created later by Save if needed).
+    """
+
+    documents = await ft.StoragePaths().get_application_documents_directory()
+    return os.path.join(documents, DATA_FOLDER_NAME)
+
+
+async def interface(page: ft.Page):
     """
     Description : Main function given to ft.run: sets up the page, the stock and the routing.
+        It is async because asking the system for the data folder is async.
 
     Args :
         page (ft.Page) : the Flet page (window) of the application.
@@ -39,7 +57,7 @@ def interface(page: ft.Page):
 
     page.title = "Inventory"
 
-    stock = Stock(Save("inventory.json", DATA_FOLDER))
+    stock = Stock(Save("inventory.json", await dataFolder()))
 
     def routeChange(e=None):
         """

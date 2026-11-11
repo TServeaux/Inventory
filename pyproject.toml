@@ -1,0 +1,19 @@
+[project]
+name = "inventory"
+version = "0.1.0"
+description = "Stock management for electronic components"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "Tao Serveaux" }]
+# Packages included in the built app (APK...). For development on the computer,
+# requirements.txt installs flet[all], which also contains the desktop app and the CLI.
+dependencies = ["flet==1.1.2"]
+
+[tool.flet]
+org = "com.tserveaux"   # with the project name, gives the app id: com.tserveaux.inventory
+product = "Inventory"   # name displayed under the icon on the phone
+company = "Tao Serveaux"
+copyright = "Copyright (C) 2026 by Tao Serveaux"
+
+[tool.flet.app]
+path = "src"            # folder containing main.py; only this folder is put in the app

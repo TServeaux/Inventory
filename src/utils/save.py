@@ -4,24 +4,22 @@ Author : Tao Serveaux
 
 Description :
     Persistence layer. The Save class writes and reads the inventory data in a
-    JSON file, and keeps a copy of the component pictures in a "pictures" folder.
-    It knows nothing about components or quantities: it only stores what it is given.
+    JSON file. It knows nothing about components or quantities: it only stores
+    what it is given.
 """
 
 import json
 import os
-import shutil
-import uuid
 
 
 class Save:
     """
-    Description : Reads / writes the data file and stores the pictures.
+    Description : Reads / writes the data file.
     """
 
     def __init__(self, fileName, path):
         """
-        Description : Build the paths and create the data and pictures folders if needed.
+        Description : Build the path of the file and create the data folder if needed.
 
         Args :
             fileName (str) : name of the JSON file (e.g. "inventory.json").
@@ -32,8 +30,7 @@ class Save:
         """
 
         self.__path = os.path.join(path, fileName)
-        self.__picturesFolder = os.path.join(path, "pictures")
-        os.makedirs(self.__picturesFolder, exist_ok=True)
+        os.makedirs(path, exist_ok=True)
 
     def saveData(self, data):
         """
@@ -73,39 +70,7 @@ class Save:
         if not os.path.exists(self.__path):
             return None
 
-        with open(self.__path, encoding="utf-8") as f:
+        # "utf-8-sig" also accepts files starting with a BOM (an invisible mark
+        # that some Windows editors add at the start of the file).
+        with open(self.__path, encoding="utf-8-sig") as f:
             return json.load(f)
-
-    def storePicture(self, sourcePath):
-        """
-        Description : Copy a picture into the pictures folder under a unique name,
-            so the original file can be moved or deleted without breaking the inventory.
-
-        Args :
-            sourcePath (str) : path of the original picture.
-
-        Output :
-            str : file name of the copy (not the full path).
-
-        Raises :
-            OSError : the picture could not be copied (missing file, no permission...).
-        """
-
-        extension = os.path.splitext(sourcePath)[1].lower()
-        fileName = uuid.uuid4().hex + extension
-        shutil.copy2(sourcePath, os.path.join(self.__picturesFolder, fileName))
-
-        return fileName
-
-    def picturePath(self, fileName):
-        """
-        Description : Give the full path of a stored picture.
-
-        Args :
-            fileName (str) : file name returned by storePicture.
-
-        Output :
-            str : full path of the picture.
-        """
-
-        return os.path.join(self.__picturesFolder, fileName)

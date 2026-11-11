@@ -3,7 +3,7 @@ Date : 11/11/2026
 Author : Tao Serveaux
 
 Description :
-    Detail page of a component (route "/component/<name>"). Shows its picture,
+    Detail page of a component (route "/component/<name>"). Shows its category icon,
     category, description and quantity, with a quantity field and two buttons
     to add or remove stock. The checks are done by Stock: this page only shows
     the result (green) or the error message (red).
@@ -13,7 +13,8 @@ from urllib.parse import quote
 
 import flet as ft
 
-from src.core.stock import StockError
+from core.icons import iconImage
+from core.stock import StockError
 
 
 class ComponentDetail(ft.View):
@@ -36,12 +37,8 @@ class ComponentDetail(ft.View):
         self.__stock = stock
         self.__name = component["name"]
 
-        picturePath = stock.picturePath(component)
-
-        if picturePath:
-            image = ft.Image(src=picturePath, width=200, height=200)
-        else:
-            image = ft.Icon(ft.Icons.IMAGE_NOT_SUPPORTED, size=80)
+        icon, color = stock.categoryStyle(component["category"])
+        image = iconImage(icon, color, 120)
 
         self.__quantityText = ft.Text(
             self.__quantityLabel(component["quantity"]),

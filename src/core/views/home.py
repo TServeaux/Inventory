@@ -13,6 +13,8 @@ from urllib.parse import quote
 
 import flet as ft
 
+from core.icons import iconImage
+
 
 class Home(ft.View):
     """
@@ -129,9 +131,14 @@ class Home(ft.View):
             ft.Column : the separator control.
         """
 
+        icon, color = self.__stock.categoryStyle(category)
+
         return ft.Column(
             controls=[
-                ft.Text(f"{category} ({quantity})", size=18, weight=ft.FontWeight.BOLD),
+                ft.Row([
+                    iconImage(icon, color, 24),
+                    ft.Text(f"{category} ({quantity})", size=18, weight=ft.FontWeight.BOLD),
+                ]),
                 ft.Divider(thickness=2),
             ],
             spacing=2,
@@ -139,7 +146,8 @@ class Home(ft.View):
 
     def componentLine(self, component):
         """
-        Description : Build the line of one component (picture, name, quantity, description).
+        Description : Build the line of one component (category icon, name,
+            quantity, description).
 
         Args :
             component (dict) : the component to display.
@@ -148,15 +156,10 @@ class Home(ft.View):
             ft.ListTile : the clickable line.
         """
 
-        picturePath = self.__stock.picturePath(component)
-
-        if picturePath:
-            image = ft.Image(src=picturePath, width=60, height=60)
-        else:
-            image = ft.Icon(ft.Icons.IMAGE_NOT_SUPPORTED, size=40)
+        icon, color = self.__stock.categoryStyle(component["category"])
 
         return ft.ListTile(
-            leading=image,
+            leading=iconImage(icon, color, 40),
             title=ft.Text(f"{component['name']} (x{component['quantity']})"),
             subtitle=ft.Text(component["description"]),
             trailing=ft.Icon(ft.Icons.CHEVRON_RIGHT),
