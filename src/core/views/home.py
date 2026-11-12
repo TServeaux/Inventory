@@ -131,12 +131,10 @@ class Home(ft.View):
             ft.Column : the separator control.
         """
 
-        icon, color = self.__stock.categoryStyle(category)
-
         return ft.Column(
             controls=[
                 ft.Row([
-                    iconImage(icon, color, 24),
+                    ft.Icon(ft.Icons.FOLDER_OUTLINED, size=24),
                     ft.Text(f"{category} ({quantity})", size=18, weight=ft.FontWeight.BOLD),
                 ]),
                 ft.Divider(thickness=2),
@@ -146,8 +144,8 @@ class Home(ft.View):
 
     def componentLine(self, component):
         """
-        Description : Build the line of one component (category icon, name,
-            quantity, description).
+        Description : Build the line of one component (its own icon and color,
+            name, quantity, description).
 
         Args :
             component (dict) : the component to display.
@@ -156,10 +154,8 @@ class Home(ft.View):
             ft.ListTile : the clickable line.
         """
 
-        icon, color = self.__stock.categoryStyle(component["category"])
-
         return ft.ListTile(
-            leading=iconImage(icon, color, 40),
+            leading=iconImage(component.get("icon"), component.get("color"), 40),
             title=ft.Text(f"{component['name']} (x{component['quantity']})"),
             subtitle=ft.Text(component["description"]),
             trailing=ft.Icon(ft.Icons.CHEVRON_RIGHT),

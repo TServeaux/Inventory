@@ -39,18 +39,31 @@ class Stock:
         self.__save = save
         data = save.loadData() or {}
 
-        # Each category is {"name": str, "icon": str, "color": str}. Older files
-        # stored only the name (a str): they get the default icon and color.
-        self.__categories = [
-            c if isinstance(c, dict)
-            else {"name": c, "icon": DEFAULT_ICON, "color": DEFAULT_COLOR}
-            for c in data.get("categories", [])
-        ]
+        # Older files stored the icon and the color in the category (or the
+        # category as a plain str). Remember them to give them to the components.
+        oldStyles = {}
+        self.__categories = []
 
-        # Older files had a "picture" field: it is no longer used.
+        for category in data.get("categories", []):
+            if not isinstance(category, dict):
+                category = {"name": category}
+
+            oldStyles[category["name"]] = (
+                category.get("icon", DEFAULT_ICON),
+                category.get("color", DEFAULT_COLOR),
+            )
+            # A category is now only a name, used to group the components.
+            self.__categories.append({"name": category["name"]})
+
+        # Each component has its own icon and color. Older components take the
+        # ones of their category. The old "picture" field is no longer used.
         self.__components = data.get("components", [])
+
         for component in self.__components:
             component.pop("picture", None)
+            icon, color = oldStyles.get(component.get("category"), (DEFAULT_ICON, DEFAULT_COLOR))
+            component.setdefault("icon", icon)
+            component.setdefault("color", color)
 
     # ---------- Reading ----------
 
@@ -67,24 +80,6 @@ class Stock:
         """
         return [c["name"] for c in self.__categories]
 
-    def categoryStyle(self, name):
-        """
-        Description : Icon and color of a category.
-
-        Args :
-            name (str) : name of the category.
-
-        Output :
-            tuple[str, str] : (icon name, color name), the defaults if the
-                category is unknown.
-        """
-
-        for category in self.__categories:
-            if category["name"] == name:
-                return category.get("icon", DEFAULT_ICON), category.get("color", DEFAULT_COLOR)
-
-        return DEFAULT_ICON, DEFAULT_COLOR
-
     @property
     def components(self):
         """
@@ -94,7 +89,8 @@ class Stock:
             None
 
         Output :
-            list[dict] : the components ({"name", "category", "quantity", "description"}).
+            list[dict] : the components ({"name", "category", "quantity",
+                "description", "icon", "color"}).
         """
         return list(self.__components)
 
@@ -119,20 +115,18 @@ class Stock:
 
     # ---------- Changes ----------
 
-    def addCategory(self, name, icon=DEFAULT_ICON, color=DEFAULT_COLOR):
+    def addCategory(self, name):
         """
         Description : Create a new category (added at the end of the list), then save.
 
         Args :
             name (str) : name of the new category.
-            icon (str) : icon of the category (a key of ICONS).
-            color (str) : color of the icon (a key of COLORS).
 
         Output :
             str : the name actually stored (spaces removed at both ends).
 
         Raises :
-            StockError : empty name, the category already exists, unknown icon or color.
+            StockError : empty name or the category already exists.
         """
 
         name = (name or "").strip()
@@ -143,17 +137,12 @@ class Stock:
         if self.__normalize(name) in [self.__normalize(c) for c in self.categories]:
             raise StockError("This category already exists")
 
-        if icon not in ICONS:
-            raise StockError("Please choose an icon")
-
-        if color not in COLORS:
-            raise StockError("Please choose a color")
-
-        self.__categories.append({"name": name, "icon": icon, "color": color})
+        self.__categories.append({"name": name})
         self.__write()
         return name
 
-    def addComponent(self, name, category, quantity, description=""):
+    def addComponent(self, name, category, quantity, description="",
+                     icon=DEFAULT_ICON, color=DEFAULT_COLOR):
         """
         Description : Create a new component, then save.
 
@@ -162,12 +151,15 @@ class Stock:
             category (str) : one of the existing categories.
             quantity (int | str) : initial quantity (>= 0).
             description (str) : optional description.
+            icon (str) : icon of the component (a key of ICONS).
+            color (str) : color of the icon (a key of COLORS).
 
         Output :
             None
 
         Raises :
-            StockError : empty or already used name, unknown category, or invalid quantity.
+            StockError : empty or already used name, unknown category, invalid
+                quantity, unknown icon or color.
         """
 
         name = (name or "").strip()
@@ -182,13 +174,39 @@ class Stock:
             raise StockError("Please choose a category")
 
         quantity = self.__checkQuantity(quantity, minimum=0)
+        self.__checkStyle(icon, color)
 
         self.__components.append({
             "name": name,
             "category": category,
             "quantity": quantity,
             "description": (description or "").strip(),
+            "icon": icon,
+            "color": color,
         })
+        self.__write()
+
+    def setComponentStyle(self, name, icon, color):
+        """
+        Description : Change the icon and the color of a component, then save.
+
+        Args :
+            name (str) : name of the component.
+            icon (str) : new icon (a key of ICONS).
+            color (str) : new color (a key of COLORS).
+
+        Output :
+            None
+
+        Raises :
+            StockError : unknown component, icon or color.
+        """
+
+        component = self.__getComponent(name)
+        self.__checkStyle(icon, color)
+
+        component["icon"] = icon
+        component["color"] = color
         self.__write()
 
     def addStock(self, name, quantity):
@@ -240,6 +258,24 @@ class Stock:
 
         return component["quantity"]
 
+    def deleteComponent(self, name):
+        """
+        Description : Delete a component (whatever its quantity), then save.
+
+        Args :
+            name (str) : name of the component.
+
+        Output :
+            None
+
+        Raises :
+            StockError : the component does not exist.
+        """
+
+        component = self.__getComponent(name)
+        self.__components.remove(component)
+        self.__write()
+
     # ---------- Internal helpers ----------
 
     def __getComponent(self, name):
@@ -287,6 +323,27 @@ class Stock:
             raise StockError(f"The quantity must be at least {minimum}")
 
         return quantity
+
+    def __checkStyle(self, icon, color):
+        """
+        Description : Check that the icon and the color are known.
+
+        Args :
+            icon (str) : icon name (must be a key of ICONS).
+            color (str) : color name (must be a key of COLORS).
+
+        Output :
+            None
+
+        Raises :
+            StockError : unknown icon or color.
+        """
+
+        if icon not in ICONS:
+            raise StockError("Please choose an icon")
+
+        if color not in COLORS:
+            raise StockError("Please choose a color")
 
     def __normalize(self, text):
         """
